@@ -1,0 +1,22 @@
+A simple mesh libarary
+=====================================
+
+-------------------------------------
+[Name]
+MeshLib Libraray
+
+-------------------------------------
+[Developer]
+Xu Dong : before 2006
+hywei   : 2010 -- 
+
+------------------------------------
+[Goal]
+A general, flexible, efficient and easy-to-use mesh libraray for research purpose.
+Supporting arbitray polygonal meshes as input, but with a primary focus on triangle
+meshes now.
+
+----------------------------------
+[TODO]
+This will be added later...
+
