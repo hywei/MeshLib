@@ -1,4 +1,5 @@
-
+#ifndef MESHLIB_MESHBASICOP_H_
+#define MESHLIB_MESHBASICOP_H_
 
 class MeshModelBasicOp
 {   
@@ -118,3 +119,5 @@ inline bool MeshModelBasicOp::IsBoundaryFace(FaceID fID)
 {
     return (util.IsSetFlag(kernel->GetFaceInfo().GetFlag()[fID], FACE_FLAG_BOUNDARY));
 }
+
+#endif

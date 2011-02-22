@@ -6,7 +6,13 @@
 namespace MeshLib{
 
     class VertexInfo
-    {        
+    {
+    public:
+        enum VertFlag{
+            ISOLATED = 0x00000100, // isolated vertex flag
+            MANIFOLD = 0x00000200, // manifold vertex flag
+            BOUNDARY = 0x00000300  // boundary vertex flag
+        };
     public:
         VertexInfo(){}
         ~VertexInfo(){}
@@ -16,6 +22,11 @@ namespace MeshLib{
         ColorArray& GetColor() { return m_Color; }
         TexCoordArray& GetTexCoord() { return m_TexCoord; }
 
+        PolyIndexArray& GetAdjFaces() { return m_AdjFaces; }
+        PolyIndexArray& GetAdjVertices() { return m_AdjVerts; }
+        PolyIndexArray& GetAdjEdges() { return m_AdjEdges; }
+
+        
         int GetVertexNum() const { return m_nVertices; }
 
     private:
@@ -23,7 +34,12 @@ namespace MeshLib{
         NormalArray     m_Normal;   // Vertex normal array
         ColorArray      m_Color;    // Vertex color array
         TexCoordArray   m_TexCoord; // Vertex texture coordinate array
-    
+
+        
+        PolyIndexArray m_AdjFaces; // Vertex adjacent face array
+        PolyIndexArray m_AdjVerts; // Vertex adjacent vert array
+        PolyIndexArray m_AdjEdges; // Vertex adjacent edge array
+        
         int m_nVertices;
 
         friend class MeshKernel;
@@ -75,5 +91,47 @@ namespace MeshLib{
         friend class MeshKernel;
     };
 
+
+    /// The following haven't implement currently
+    class HalfEdge
+    {
+    public:
+        HalfEdge();
+        ~HalfEdge();
+
+    public:
+        int id;
+        int nxt_he_id;
+        int pre_he_id;
+        int opp_he_id;
+
+        int vert_id;
+        int edge_id;
+        int face_id;
+    };
+
+    
+    class HEInfo
+    {
+    public:
+        HEInfo(){}
+        ~HEInfo(){}
+
+
+        std::vector<HalfEdge>& GetHalfEdgeArray() { return m_he_vec; }
+        
+    private:
+        std::vector<HalfEdge> m_he_vec;
+
+        friend class MeshKernel;
+        
+    }
+    
+    HalfEdge::HalfEdge() {
+        id = nxt_he_id = pre_he_id = opp_he_id = vert_id = edge_id = face_id = -1;
+    }
+    HalfEdge::~HalfEdge() {}
+
+    
 }
 #endif
