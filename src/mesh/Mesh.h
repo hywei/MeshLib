@@ -21,14 +21,12 @@ namespace MeshLib{
         bool AttachModel(const std::string& filename);
         bool StoreModel(const std::string& filename) const;
 
-    private:
+
+    public:
         boost::shared_ptr<MeshKernel> p_Kernel;
         boost::shared_ptr<MeshIO> p_IO;
         boost::shared_ptr<MeshBasicOP> p_BasicOP;
-
-        friend class MeshKernel;        
-        friend class MeshIO;
-        friend class MeshBasicOP;
+        boost::shared_ptr<ModelInfo> p_ModelInfo;
         
     };
 

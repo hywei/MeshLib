@@ -15,11 +15,11 @@ namespace MeshLib{
         
         std::string GetFileName() const { return m_FileName; }
     
-        int GetVertexNum() const { return m_nVertices; }
-        int GetFaceNum() const { return m_nFaces; }
-        int GetHalfEdgeNum() const { return m_nHalfEdges; }    
-        int GetBoundaryNum() const { return m_nBoundaries; }
-        int GetComponentNum() const { return m_nComponents; }
+        size_t GetVertexNum() const { return m_nVertices; }
+        size_t GetFaceNum() const { return m_nFaces; }
+        size_t GetHalfEdgeNum() const { return m_nHalfEdges; }    
+        size_t GetBoundaryNum() const { return m_nBoundaries; }
+        size_t GetComponentNum() const { return m_nComponents; }
         double GetAvgEdgeLength() const { return m_AvgEdgeLength; }
         double GetAvgFaceArea() const{ return m_AvgFaceArea; }        
         void GetBoundingBox(Coord& BoxMin, Coord& BoxMax, Coord& BoxDim) const { BoxMin = m_BoxMin; BoxMax = m_BoxMax; BoxDim = m_BoxDim; }
@@ -36,12 +36,12 @@ namespace MeshLib{
 
     private:
         std::string  m_FileName; // File name(Path + Tilte + Ext)
-        int     m_nVertices; // Number of valid vertices
-        int     m_nFaces;    // Number of valid faces
-        int     m_nHalfEdges; // Number of valid half edges
+        size_t     m_nVertices; // Number of valid vertices
+        size_t     m_nFaces;    // Number of valid faces
+        size_t     m_nHalfEdges; // Number of valid half edges
 
-        int     m_nBoundaries;  // Number of boundaries
-        int     m_nComponents;  // Number of connected components
+        size_t     m_nBoundaries;  // Number of boundaries
+        size_t     m_nComponents;  // Number of connected components
 
         Coord   m_BoxMin, m_BoxMax, m_BoxDim;
         Coord   m_SphereCenter;

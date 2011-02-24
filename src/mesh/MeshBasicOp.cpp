@@ -1,476 +1,170 @@
 #include "MeshBasicOP.h"
 #include "Mesh"
-#include <stack>
+#include <queue>
 #include <algorithm>
 #include <cmath>
 #include <cassert>
 #include <fstream>
+using namespace std;
 
 namespace MeshLib{
 
     MeshBasicOP::MeshBasicOP(Mesh& mesh) : m_mesh(mesh){}
     MeshBasicOP::~MeshBasicOP() {}
-    void MeshBasicOP::CalAdjacentInfo()
+
+    vector<VertHandle> MeshBasicOP::GetAdjVertArray(const VertHandle& vh) const
     {
-        VertexInfo& vInfo = m_mesh.p_Kernel->GetVertexInfo();
-        FaceInfo& fInfo = m_mesh.p_Kernel->GetFaceInfo();
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        const vector<HalfEdge>& he_vec = m_mesh.p_Kernel->GetHEArray();
+        const Vert& vert = vert_vec[vh];
+        vector<VertHandle> vh_vec;
+        HalfEdgeHandle he_handle = vert.he_handle;
+        if(he_handle == -1) return vh_vec;
+        HalfEdgeHandle _he_handle = he_handle;
+        do{
+            HalfEdgeHandle op_he_hl = he_vec[_he_handle].oppo_he_handle;
+            _he_handle = he_vec[op_he_hl].next_he_handle;
+            const HalfEdge& he = he_vec[op_he_hl];
+            vh_vec.push_back(he.vert_handle);
+        }while(_he_handle != he_handle);
 
-        PolyIndexArray& vAdjVerts = vInfo.GetAdjVertices();
-        PolyIndexArray& vAdjFaces = vInfo.GetAdjFaces();
-
-        vAdjVerts.clear();
-        vAdjFaces.clear();
-    
-        // Calculate the adjacent faces for each vertex
-        size_t i, j, n;
-        size_t nVertex = vInfo.GetCoord().size();
-        vAdjFaces.resize(nVertex);
-        vAdjVerts.resize(nVertex);
-    
-        PolyIndexArray& fIndex = fInfo.GetIndex();
-        size_t nFace = fIndex.size();
-        for(i = 0; i < nFace; ++ i)
-            {
-                IndexArray& f = fIndex[i];
-                n = f.size();
-                for(j = 0; j < n; ++ j)
-                    {
-                        VertexID vID = f[j];
-                        vAdjFaces[vID].push_back((int) i);
-
-                        VertexID prev_vID = f[(j+n-1)%n];
-                        VertexID next_vID = f[(j+1)%n];
-
-                        if(find(vAdjVerts.begin(), vAdjVerts.end(), prev_vID) == vAdjVerts.end()) vAdjVerts.push_back(prev_vID);
-                        if(find(vAdjVerts.begin(), vAdjVerts.end(), next_vID) == vAdjVerts.end()) vAdjVerts.push_back(next_vID); 
-                    }
-            }
+        return vh_vec;
     }
 
-    // Bounding box calculation
-    void MeshBasicOP::CalBoundingBox()
+    vector<FaceHandle> MeshBasicOP::GetAdjFaceArray(const FaceHandle& vh) const
     {
-        CoordArray& vCoord = m_mesh.p_Kernel->GetVertexInfo().GetCoord();
-        size_t nVertex = vCoord.size();
-    
-        Coord BoxMin(vCoord[0]), BoxMax(vCoord[0]), SphereCenter;
-        double SphereRadius;
-    
-        // Calculate the bounding box and the center of the bounding sphere
-        for(size_t i = 0; i < nVertex; ++ i)
-            {
-                Coord& v = vCoord[i];
-                for(int j = 0; j < 3; ++ j)
-                    {
-                        if(v[j] < BoxMin[j]) BoxMin[j] = v[j];
-                        if(v[j] > BoxMax[j]) BoxMax[j] = v[j];
-                        SphereCenter[j] += v[j];
-                    }
-            }
-        SphereCenter /= (double)nVertex;
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        const vector<HalfEdge>& he_vec = m_mesh.p_Kernel->GetHEArray();
+        const Vert& vert = vert_vec[vh];
+        vector<FaceHandle> fh_vec;
+        HalfEdgeHandle he_handle = vert.he_handle;
+        if(he_handle == -1) return fh_vec;
+        HalfEdgeHandle _he_handle = he_handle;
+        do{
+            HalfEdgeHandle op_he_hl = he_vec[_he_handle].oppo_he_handle;
+            _he_handle = he_vec[op_he_hl].next_he_handle;
+            const HalfEdge& he = he_vec[op_he_hl];
+            fh_vec.push_back(he.face_handle);
+        }while(_he_handle != he_handle);
 
-        // Calculate the radius of the bounding sphere
-        SphereRadius = (vCoord[0]-SphereCenter).abs();
-        for(size_t i = 1; i < nVertex; ++ i)
-            {
-                double r = (vCoord[i]-SphereCenter).abs();
-                if(r > SphereRadius) SphereRadius = r;
-            }
-
-        // Update corresponding model information
-        ModelInfo& mInfo = m_mesh.p_Kernel->GetModelInfo();
-        mInfo.SetBoundingBox(BoxMin, BoxMax, BoxMax-BoxMin);
-        mInfo.SetBoundingSphere(SphereCenter, SphereRadius);
-
-        printf("Model BoundingSphere Center : (%lf %lf %lf), Radius : %lf\n",
-               SphereCenter[0], SphereCenter[1], SphereCenter[2], SphereRadius);
+        return fh_vec;
     }
+    
+    void MeshBasicOP::CalBoundingBox(Coord3D& box_min, Coord3D& box_max, Coord3D& box_dim) const
+    {
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        if(vert_vec.size() == 0) return;
+        box_min = box_max = vert_vec[0].coord; 
+        for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
+            const Coord3D& coord = vert_vec[vh].coord;
+            for(size_t k=0; k<coord.size(); ++k){
+                box_min[k] = min(box_min[k], coord[k]);
+                box_max[k] = max(box_max[k], coord[k]);
+            }
+        }
+        box_dim = box_max - box_min;
+    }   
 
+    void MeshBasicOP::CalBoundingSphere(Coord3D& sphere_center, double radius) const
+    {
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        if(vert_vec.size() == 0) return;
+        sphere_center.setCoord(0, 0, 0); 
+        for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
+            sphere_center += vert_vec[vh].coord;
+        }
+        sphere_center /= vert_vec.size();
+        radius = (vert_vec[vh].coord - sphere_center).abs();
+        for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
+            radius = max(radius, (vert_vec[vh].coord - sphere_center).abs());
+        }
+    }
 
 
     void MeshBasicOP::CalFaceNormal()
     {
-        CoordArray& vCoord = m_mesh.p_Kernel->GetVertexInfo().GetCoord();
-        PolyIndexArray& fIndex = m_mesh.p_Kernel->GetFaceInfo().GetIndex();
-        NormalArray& fNormal = m_mesh.p_Kernel->GetFaceInfo().GetNormal();
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        const vector<Face>& face_vec = m_mesh.p_Kernel->GetFaceArray();
 
-        fNormal.resize(fIndex.size());
-        Coord v[3];
-        for(size_t i = 0; i < fIndex.size(); ++ i)
-            {
-                IndexArray& f = fIndex[i];
-                for(size_t j = 0; j < 3; ++ j) v[j] = vCoord[f[j]];
-                Normal& fn = fNormal[i];
-                fn = cross(v[1]-v[0], v[2]-v[0]);
-                if(!fn.normalize()) fn = COORD_AXIS_Z;
-            }
-    }
-    void MeshBasicOP::CalVertexNormal()
-    {
-        CoordArray& vCoord = m_mesh.p_Kernel->GetVertexInfo().GetCoord();
-        NormalArray& vNormal = m_mesh.p_Kernel->GetVertexInfo().GetNormal();
-        NormalArray& fNormal = m_mesh.p_Kernel->GetFaceInfo().GetNormal();
-        PolyIndexArray& vAdjFaces = m_mesh.p_Kernel->GetVertexInfo().GetAdjFaces();
-    
-        vNormal.resize(nVertex);
-        for(size_t i = 0; i < vCoord.size(); ++i)
-            {
-                Normal& vn = vNormal[i];
-                vn.setCoords(0.0, 0.0, 0.0);
-                for(size_t j = 0; j < vAdj.size(); ++ j)
-                    {
-                        vn += fNormal[vAdjFaces[i][j]];
-                    }
-                if(!vn.normalize()) vn = COORD_AXIS_Z;
-            }
+        for(FaceHandle fh = 0; fh < face_vec.size(); ++fh){
+            Face& face = face_vec[fh];
+            const vector<VertHandle>& vh_vec = face.vert_handle_vec;
+            const Vert& v0 = vh_vec[0];
+            const Vert& v1 = vh_vec[1];
+            const Vert& v2 = vh_vec[2];
+            face.normal = cross(v1.coord - v0.coord, v2.coord - v0.coord);
+            if(!face.normal.normalize()) face.normal = COORD_AXIS_Z;
+        }
     }
 
-
-    void MeshBasicOP::CalComponentInfo()
+    void MeshBasicOP::CalVertNormal()
     {
-        PolyIndexArray& vAdjVerts = m_mesh.p_Kernel->GetVertexInfo().GetAdjVertices();
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        const vector<Face>& face_vec = m_mesh.p_Kernel->GetFaceArray();
 
-        size_t nVertex = vAdjVerts.size();
-        std::vector<bool> Visited;
-        Visited.resize(nVertex);
-        std::fill(Visited.begin(), Visited.end(), false);
+        for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
+            Vert& vert = vert_vec[vh];
+            vert.normal.setCoords(0, 0, 0);
+            const vector<FaceHandle>& adj_faces = GetAdjFaceArray();
+            for(size_t k=0; k<adj_faces.size(); ++k){
+                const Face& face = adj_faces[k];
+                vert.normal += face.normal;
+            }
+            if(!vert.normal.normalize()) vert.normal = COORD_AXIS_Z;
+        }
+    }
 
-        int nComponent = 0;
-        for(size_t i = 0; i < nVertex; ++ i)
-            {
-                if(Visited[i]) continue;
+    size_t MeshBasicOP::CountComponentNum() const
+    {
+        size_t vert_num = mesh.p_MeshInfo->GetVertNum();
         
-                std::stack<VertexID> Stack;
-                Stack.push((int) i);
-                Visited[i] = true;
-                while(Stack.size()){
-                    VertexID vID = Stack.top(); Stack.pop();
+        size_t component_num = 0;
+        std::vector<bool> visited_flag(vert_num, false);
 
-                    IndexArray& adjVertices = vAdjVerts[vID];
-                    for(size_t j = 0; j < adjVertices.size(); ++ j)
-                        {
-                            if(!Visited[adjVertices[j]])
-                                {
-                                    Stack.push(adjVertices[j]);
-                                    Visited[adjVertices[j]] = true;
-                                }
+        for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
+            if(!visited_flag[vh]){
+                component_num ++;
+                queue<VertHandle> q;
+                q.push(vh); visited_flag[vh] = true;
+                while(!q.empty()){
+                    VertHandle _vh = q.front(); q.pop();
+                    const vector<VertHandle>& adj_vert = GetAdjVertArray(_vh);
+                    for(size_t k=0; k<adj_vert.size(); ++k){
+                        if(!visited_flag[adj_vert[k]] ){
+                            q.push(adj_vert[k]]; visited_flag[adj_vert[k]] = true;
                         }
+                    }
                 }
-                ++ nComponent;
             }
+        }
+        return component_num;
+    }
+
     
-        m_mesh.p_Kernel->GetModelInfo().SetComponentNum(nComponent);
-        printf("Number of Components = %4d\n", nComponent);
-    }
-
-    void MeshBasicOP::TopologyAnalysis()
-    {
-        //TODO
-        CoordArray& vCoord = kernel->GetVertexInfo().GetCoord();
-        FlagArray& vFlag = kernel->GetVertexInfo().GetFlag();
-        PolyIndexArray& vAdjFaces = kernel->GetVertexInfo().GetAdjFaces();
-        PolyIndexArray& vAdjVertices = kernel->GetVertexInfo().GetAdjVertices();
-        PolyIndexArray& fIndex = kernel->GetFaceInfo().GetIndex();
-        FlagArray& fFlag = kernel->GetFaceInfo().GetFlag();
-
-        size_t nVertex = vCoord.size();
-        size_t nFace = fIndex.size();
-
-        size_t i, j, n;
-        vFlag.resize(nVertex);
-        fFlag.resize(nFace);
-        fill(vFlag.begin(),vFlag.end(), 0);
-        fill(fFlag.begin(),fFlag.end(), 0);
-
-        ofstream fout("bad_topogloy.txt");
-
-        bool bManifoldModel = true;
-        for(i = 0; i < nVertex; ++ i)
-            {
-                IndexArray& adjFaces = vAdjFaces[i];
-                Flag& flag = vFlag[i];
-
-                n = adjFaces.size();
-                if(!n)  // Isolated vertex
-                    {
-                        util.SetFlag(flag, VERTEX_FLAG_ISOLATED);
-                        continue;
-                    }
-
-                // Check topology for the 1-ring neighborhood of vertex i
-                IndexArray& adjVertices = vAdjVertices[i];
-                n = adjVertices.size();
-                int nBdyFace = 0, nNonManifoldFace = 0;
-                for(j = 0; j < n; ++ j)
-                    {
-                        switch(AdjFaceNum((int) i, adjVertices[j]))
-                            {
-                            case 1:     // Boundary
-                                ++ nBdyFace;
-                                //		auxdata->AddLine(vCoord[i], vCoord[adjVertices[j]], DARK_GREEN);
-                                fout << i+1 <<' '<<adjVertices[j]+1 <<endl;
-                                break;
-                            case 2:     // 2-Manifold
-                                break;
-                            default:    // Non-Manifold
-                                ++ nNonManifoldFace;
-                                auxdata->AddLine(vCoord[i], vCoord[adjVertices[j]], DARK_GREEN);
-                                fout << i+1 <<' '<<adjVertices[j]+1 <<endl;
-                            }
-			
-                    }
-                if(nNonManifoldFace || nBdyFace > 2)    // Non-manifold vertex
-                    {
-                        Coord v = vCoord[i];
-                        auxdata->AddPoint(v, DARK_RED);
-                        fout<< i+1 << endl;
-                        bManifoldModel = false;
-                        continue;
-                    }
-
-                // 		auxdata->AddPoint(vCoord[0], DARK_RED);
-                // 		auxdata->AddPoint(vCoord[15], DARK_GREEN);
-                // 		auxdata->AddPoint(vCoord[240], DARK_BLUE);
-                // 		auxdata->AddPoint(vCoord[255], DARK_GREY);
-        
-                // Manifold vertex
-                util.SetFlag(flag, VERTEX_FLAG_MANIFOLD);
-                if(nBdyFace == 2)   // Boundary vertex
-                    util.SetFlag(flag, VERTEX_FLAG_BOUNDARY);
-            }
-        fout.close();
-
-        // Set face flag
-        bool bTriMesh = true;
-        bool bQuadMesh = true;
-        for(i = 0; i < nFace; ++ i)
-            {
-                IndexArray& f = fIndex[i];
-                n = f.size();
-
-                if(n != 3)
-                    bTriMesh = false;
-                else if(n != 4)
-                    bQuadMesh = false;
-
-                int nBdyVtx = 0;
-                bool bManifoldFace = true;
-                for(j = 0; j < n; ++ j)
-                    {
-                        if(!util.IsSetFlag(vFlag[f[j]], VERTEX_FLAG_MANIFOLD))
-                            {
-                                bManifoldFace = false;
-                                break;
-                            }
-                        else if(util.IsSetFlag(vFlag[f[j]], VERTEX_FLAG_BOUNDARY))
-                            nBdyVtx ++;
-                    }
-                Flag& flag = fFlag[i];
-                if(bManifoldFace)
-                    {
-                        util.SetFlag(flag, FACE_FLAG_MANIFOLD);
-                        if(nBdyVtx > 1)
-                            util.SetFlag(flag, FACE_FLAG_BOUNDARY);
-                    }
-            }
-
-        // Set model flag
-        Flag& mFlag = kernel->GetModelInfo().GetFlag();
-        mFlag = 0;
-        if(bManifoldModel)  // Manifold model
-            {
-                util.SetFlag(mFlag, MODEL_FLAG_MANIFOLD);
-                printf("Manifold Model\n");
-            }
-        if(bTriMesh)
-            {
-                util.SetFlag(mFlag, MODEL_FLAG_TRIMESH);
-                printf("Triangle Mesh\n");
-            }
-        else if(bQuadMesh)
-            {
-                util.SetFlag(mFlag, MODEL_FLAG_QUADMESH);
-                printf("Quadangle Mesh\n");
-            }
-        else
-            {
-                util.SetFlag(mFlag, MODEL_FLAG_GENERALMESH);
-                printf("General Mesh\n");
-            }
-
-    }
-
-    // Make sure the 1-ring neighbors are CCW order
-    void MeshBasicOP::SortAdjacentInfo()
-    {
-        CoordArray& vCoord = m_mesh.p_Kernel->GetVertexInfo().GetCoord();
-        PolyIndexArray& vAdjFaces = m_mesh.p_Kernel->GetVertexInfo().GetAdjFaces();
-        PolyIndexArray& vAdjVerts = m_mesh.p_Kernel->GetVertexInfo().GetAdjVertices();
-        PolyIndexArray& fIndex = m_mesh.p_Kernel->GetFaceInfo().GetIndex();
-
-        size_t nVertex = vCoord.size();
-        size_t nFace = fIndex.size();
-    
-        for(size_t i = 0; i < nVertex; ++ i)
-            {
-                // Only for manifold vertex
-                IndexArray& adjFaces = vAdjFaces[i];
-                n = adjFaces.size();
-                assert(n > 0);
-
-                // Find the start face
-                FaceID start_fID = adjFaces[0];
-     
-                {
-                    start_fID = -1;
-                    for(j = 0; j < n; ++ j)
-                        {
-                            FaceID fID = adjFaces[j];
-                            if(!util.IsSetFlag(fFlag[fID], FACE_FLAG_BOUNDARY))
-                                continue;
-                            IndexArray& face = fIndex[fID];
-                            size_t idx = distance(face.begin(), find(face.begin(), face.end(), i));
-                            VertexID next_vID = face[(idx+1)%face.size()];
-                            if(util.IsSetFlag(vFlag[next_vID], VERTEX_FLAG_BOUNDARY))   // Find it
-                                {
-                                    if(AdjFaceNum((int) i, next_vID) == 1)    // Make sure it is a boundary edge (i, next_vID)
-                                        {
-                                            start_fID = fID;
-                                            break;
-                                        }
-                                }
-                        }
-                    assert(start_fID != -1);
-                }
-
-                // Iteratively find the next neighboring face
-                IndexArray Sorted;
-                Sorted.reserve(n);
-        
-                IndexArray Idx;     // Record the index of vertex i in each sorted adjacent face
-                Idx.reserve(n);
-                for(j = 0; j < n; ++ j)
-                    {
-                        IndexArray& face = fIndex[start_fID];
-                        m = face.size();
-                        size_t idx = distance(face.begin(), find(face.begin(), face.end(), i));
-                        Idx.push_back((int) idx);
-            
-                        // Vertex i may have only 1 adjacent face
-                        if(j == n-1)    // Last one, Not need to find the next neighboring face
-                            continue;
-
-                        Sorted.push_back(start_fID);
-                        adjFaces.erase(remove(adjFaces.begin(), adjFaces.end(), start_fID), adjFaces.end());
-        
-                        VertexID prev_vID = face[(idx+m-1)%m];
-                        for(k = 0; k < adjFaces.size(); ++ k)
-                            {
-                                FaceID fID = adjFaces[k];
-                                IndexArray& f = fIndex[fID];
-                                size_t idx = distance(f.begin(), find(f.begin(), f.end(), i));
-                                VertexID next_vID = f[(idx+1)%f.size()];
-                                if(next_vID == prev_vID)    // Next neighboring face
-                                    {
-                                        start_fID = fID;
-                                        break;
-                                    }
-                            }
-                    }
-                assert(adjFaces.size() >= 1);
-                Sorted.push_back(adjFaces[0]);
-                adjFaces.clear();
-                adjFaces = Sorted;
-
-                // Set sorted adjacent vertices for vertex i
-                IndexArray& adjVertices = vAdjVerts[i];
-                adjVertices.clear();
-                n = adjFaces.size();
-                for(j = 0; j < n; ++ j)
-                    {
-                        IndexArray& face = fIndex[adjFaces[j]];
-                        int idx = Idx[j];
-                        m = face.size();
-                        VertexID vID = face[(idx+1)%m];
-                        adjVertices.push_back(vID);
-                    }
-                if(util.IsSetFlag(vFlag[i], VERTEX_FLAG_BOUNDARY))  // Boundary vertex, add one more adjacent vertex
-                    {
-                        IndexArray& face = fIndex[adjFaces[n-1]];
-                        int idx = Idx[n-1];
-                        m = face.size();
-                        VertexID vID = face[(idx+m-1)%m];
-                        adjVertices.push_back(vID);
-                    }
-            }
-    }
-
     void MeshBasicOP::InitModel()
     {   
-        printf("Analyze the mesh model...\n");
-
-        CalAdjacentInfo();
-        CalBoundingBox();
-
-        // Normal calculations
-        CalFaceNormal();
-        CalVertexNormal();
-
-        // Calculating number of connected components
-        CalComponentInfo();
-
-        // Analyzing the topology of the model, manifold or not
-        TopologyAnalysis();
-    
-        if(m_mesh.p_Kernel->GetModelInfo().IsManifold())
-            {
-                SortAdjacentInfo(); // Sorting the adjacent face/vertex information for each vertex
-                CalBoundaryInfo();  // Extracting the boundaries of the model
-            }
-
-        // cal avg edge length here.
-        m_mesh.p_Kernel->GetModelInfo().SetAvgEdgeLength(GetAvgEdgeLength());
-
-        // cal the dihedral angle here.
-        CalVertexEdgeInfo();
-        CalFaceEdgeInfo();
-    
-        int vert_num = (int)m_mesh.p_Kernel->GetVertexInfo().GetCoord().size();
-        int face_num = (int)m_mesh.p_Kernel->GetFaceInfo().GetIndex().size();
-
-        m_mesh.p_Kernel->GetModelInfo().SetVertexNum(vert_num);
-        m_mesh.p_Kernel->GetModelInfo().SetFaceNum(face_num);
+        
+        
     }
 
 
-    // Get the average edge length
-    double MeshBasicOP::GetAvgEdgeLength()
+    double MeshBasicOP::CalAvgEdgeLength()
     {
-        CoordArray& vCoord = m_mesh.p_Kernel->GetVertexInfo().GetCoord();
-        PolyIndexArray& vAdjVerts = m_mesh.p_Kernel->GetVertexInfo().GetAdjVertices();
-        size_t nVertex = vCoord.size();
-    
-        time_t tt1;
-        time(&tt1);
-        srand((unsigned)tt1);
+        const vector<Edge>& edge_vec = mesh.p_Kernel->GetEdgeArray();
+        const vector<Vert>& vert_vec = mesh.p_Kernel->GetVertArray();
+        const vector<HalfEdge>& he_vec = mesh.p_Kernel->GetHalfEdgeArray();
 
-        double avg_edge = 0.0;
-        int nEdge = 0;
-        // Calculate by full sampling
-        for(size_t i = 0; i < nVertex; ++ i)
-            {
-                IndexArray& adjVertices = vAdjVerts[i];
-                size_t j, m = adjVertices.size();
-                for(j = 0; j < m; ++ j)
-                    {
-                        VertexID vID = adjVertices[j];
-                        if(vID > (int) i)
-                            continue;
-                        avg_edge += (vCoord[i]-vCoord[vID]).abs();
-                        ++ nEdge;
-                    }
-            }
-        return avg_edge/(double)nEdge;
+        double sum_len = 0;
+        size_t edge_num = edge_vec.size();
+        for(size_t k=0; k<edge_num; ++k){
+            const Edge& edge = edge_vec[k];
+            const Vert& vert1 = vert_vec[he_vec[edge.he_handle_1].vert_handle];
+            const Vert& vert2 = vert_vec[he_vec[edge.he_handle_2].vert_handle];
+
+            double edge_len = (vert1.coord - vert2.coord).abs();
+            sum_len += edge_len;
+        }
+        return sum_len / edge_num*1.0;
     }
 
 }

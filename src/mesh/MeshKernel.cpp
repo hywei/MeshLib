@@ -9,6 +9,7 @@ namespace MeshLib{
     
     void MeshKernel::AnalysisModel()
     {
+        bool tri_mesh(true), quad_mesh(false), poly_mesh(false), manifold(true);
         typedef pair<VertHandle, VertHandle> Mesh_Edge;
         map< Mesh_Edge, vector<FaceHandle> > edge_map;
         map< VertHandle, vector<VertHandle> > vert_adjacent;
@@ -21,9 +22,11 @@ namespace MeshLib{
             }            
             if(vert_num !=3 && vert_num != 4){
                 //TODO: set MESHFLAG general ploy
+                poly_mesh = true; tri_mesh = quad_mesh = false;
             }
             if(vert_num == 4){
                 //TODO: set MESHFLAG QUAD mesh
+                if(!poly_mesh) { quad_mesh = true; tri_mesh = false;}
             }
             for(size_t i=0; i<face.vert_handle_vec.size(); ++i){
                 const VertHandle& cur_handle = face.vert_handle_vec[i];
@@ -32,6 +35,7 @@ namespace MeshLib{
 
                 if(cur_handle == nxt_handle){
                     //TODO: set FACEFLAG non-manifold
+                    manifold = false;
                     continue;
                 }
 
@@ -48,10 +52,11 @@ namespace MeshLib{
 
         for(map<Mesh_Edge, vector<FaceHandle> >::const_iterator it = edge_map.begin(); it!=edge_map.end(); ++it){
             if(it->second.size() == 1){
-                //TODO: set EDGEFLAG boundary
+                //TODO: set EDGEFLAG boundary                
             }else if(it->second.size() == 2){
             }else{
                 //TODO: set EDGEFLAG non-manifold
+                manifold = false;
             }
         }
         
@@ -59,11 +64,27 @@ namespace MeshLib{
             const vector<VertHandle>& adj_verts = it->second;
             if(adj_verts.size() == 0){
                 //TODO: set VERTFLAG isolated                
+            }else{
+                int bdy_num = 0;
+                for(size_t i=0; i<adj_verts.size(); ++i){
+                    VertHandle vh1 = it->first;
+                    VertHandle vh2 = adj_verts[i];
+                    Mesh_Edge me = (vh1 < vh2) ? make_pair(vh1, vh2) : make_pair(vh2, vh1);
+                    if(edge_map[me].size() ==1) bdy_num ++;
+                }
+                if(bdy_num > 2) { manifold = false; }
             }
         }
         
         // set mesh flag
-        
+        mesh_info.tri_mesh = tri_mesh;
+        mesh_info.quad_mesh = quad_mesh;
+        mesh_info.poly_mesh = poly_mesh;
+        mesh_info.manifold = manifold;
+
+        mesh.vert_num = vert_vec.size();
+        mesh.face_num = face_vec.size();
+        mesh.edge_num = edge_map.size();
     }
 
     bool MeshKernel::CreateHalfEdgeDS()
@@ -128,7 +149,7 @@ namespace MeshLib{
             edge_map[bdy_edge] = he_vec.size()-1;            
         }
         for(size_t k=0; k<bdy_edge.size(); ++k){
-            HalfEdge& inner_he = he_vec[bdy_he_vec[k]];
+            Halfedge& Inner_He = He_Vec[Bdy_He_Vec[K]];
             HalfEdgeHandle curr_he_handle = bdy_edge[k];
             HalfEdgeHandle prev_he_handle = he_vec[bdy_edge[k]].prev_he_handle;
             HalfEdgeHandle next_he_handle = he_vec[bdy_edge[k]].next_he_handle;

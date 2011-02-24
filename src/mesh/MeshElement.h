@@ -2,10 +2,11 @@
 #define MESHLIB_MESHELEMENT_H_
 
 #include "../common/types.h"
+#include <string>
 
 namespace MeshLib{
 
-    typedef int Handle;
+    typedef ptrdiff_t Handle;
     
     typedef Handle VertHandle;
     typedef Handle FaceHandle;
@@ -36,9 +37,9 @@ namespace MeshLib{
     class Vert
     {        
     public:
-        Normal normal;
-        Color  color;        
         Coord3D coord;
+        Normal normal;
+        Color  color;
         VERTFLAG flag; // flag bits
         HalfEdgeHandle he_handle; 
     };
@@ -82,10 +83,28 @@ namespace MeshLib{
     public:
         MESHFLAG flag;
 
-        bool IsTriMesh() const;
-        bool IsQuadMesh() const;
-        bool IsPolyMesh() const;
-        bool IsManifold() const;
+        bool IsTriMesh() const {return tri_mesh; }
+        bool IsQuadMesh() const { return quad_mesh; }
+        bool IsPolyMesh() const { return poly_mesh; }
+        bool IsManifold() const { return manifold; }
+
+        std::string GetModelName() const { return model_name; }
+        size_t GetVertNum() const { return vert_num; }
+        size_t GetFaceNum() const { return face_num; }
+        size_t GetEdgeNum() const { return edge_num; }
+        
+    private:
+        bool tri_mesh;
+        bool quad_mesh;
+        bool poly_mesh;
+        bool manifold;
+
+        std::string model_name;
+        size_t vert_num;
+        size_t face_num;
+        size_t edge_num;
+
+        friend class MeshKernel;
     }
 }
 

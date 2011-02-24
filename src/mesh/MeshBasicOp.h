@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../common/types"
+#include "MeshElement.h"
 
 namespace MeshLib{
 
@@ -14,23 +15,22 @@ namespace MeshLib{
         MeshBasicOP(Mesh& mesh);
         ~MeshBasicOP();
 
-        void InitModel(); // Analyzing and initializing the topological structure
+        void InitModel();
 
+        std::vector<VertHanlde> GetAdjVertArray(const VertHanlde&) const;
+        std::vector<FaceHanlde> GetAdjFaceArray(const VertHanlde&) const;
+        
     private:
         
         void CalAdjacentInfo();
       
-        void CalVertexNormal(); // Calculate normal vector of all vertices      
+        void CalVertNormal(); // Calculate normal vector of all vertices      
         void CalFaceNormal();   // Calculate normal vector of all faces
-        
-        void CreateHalfEdge();  // Create halfedge, optional function
-        
-        void CalBoundingBox();      // Bounding box calculation
-        void CalComponentInfo();    // Component calculation
-        
-        void TopologyAnalysis();
-        
-        double GetAvgEdgeLength();
+        void CalBoundingBox(Coord3D& box_min, Coord3D& box_max, Coord3D& box_dim) const;
+        void CalBoundingSphere(Coord3D& sphere_center, double radius) const;
+
+        size_t CountComponentNum() const; 
+        double CalAvgEdgeLength() const;
         
     private:
         Mesh& m_mesh;
