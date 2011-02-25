@@ -107,13 +107,13 @@ namespace MeshLib{
         friend class MeshIO;
     };
 
-    HalfEdge::HalfEdge():
-    prev_he_handle(-1), next_he_handle(-1), oppo_he_handle(-1),
+    inline HalfEdge::HalfEdge():
+        prev_he_handle(-1), next_he_handle(-1), oppo_he_handle(-1),
         vert_handle(-1), face_handle(-1), edge_handle(-1)
     {
     }
 
-    HalfEdge::~HalfEdge(){}
+    inline HalfEdge::~HalfEdge(){}
 }
 
 #endif
