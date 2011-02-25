@@ -24,7 +24,7 @@ namespace MeshLib{
         printf("Load Model %s... ", (file_title+file_ext).c_str());
 
         // Set model informaion
-        ModelInfo& mInfo = m_mesh.p_Kernel->GetModelInfo();
+        ModelInfo& mInfo = *m_mesh.p_ModelInfo;
         mInfo.m_FileName = filename;
 
         // Load model
@@ -44,12 +44,11 @@ namespace MeshLib{
         }
 
         printf("%s\n", (bOpenFlag == true) ? "Success" : "Fail");
-        if(bOpenFlag)
-            {
-                size_t nVertex = m_mesh.p_Kernel->GetVertexInfo().GetCoord().size();
-                size_t nFace   = m_mesh.p_Kernel->GetFaceInfo().GetIndex().size();
-                printf("#Vertex = %d, #Face = %d\n\n", nVertex, nFace);
-            }
+        if(bOpenFlag){
+            size_t nVertex = mInfo.m_nVertices;
+            size_t nFace   = mInfo.m_nFaces;
+            printf("#Vertex = %d, #Face = %d\n\n", nVertex, nFace);
+        }
 
         return bOpenFlag;
     }
@@ -192,13 +191,12 @@ namespace MeshLib{
 			case 'v':	/* v, vn , vt*/
 				stream << line;
 				stream >> s;
-                Vert& vert = vert_vec[vn];
 				if(s.length() == 1)	{                    
-                    stream >> vert.coord[0] >> vert.coord[1] >> vert.coord[2];
+                    stream >> vert_vec[vn].coord[0] >> vert_vec[vn].coord[1] >> vert_vec[vn].coord[2];
 					stream.str(""); stream.clear(); 
 					++vn;
 				}else if(s[1] == 'n') {
-                    stream >> vert.normal[0] >> vert.normal[1]>> vert.normal[2];
+                    stream >> vert_vec[vn].normal[0] >> vert_vec[vn].normal[1]>> vert_vec[vn].normal[2];
 					stream.str(""); stream.clear();
 					++vt_num;
 				}else if(s[1] == 't') {
@@ -214,7 +212,7 @@ namespace MeshLib{
                     line[len-1]=' '; line +=ss;
                     len=(int)line.length();
                 }
-                Face& face = face_vec[fn];
+                //                Face& face = face_vec[fn];
 				v=0, t=0, n=0;
 				for(int i=1;i<len;i++){
                     c=line[i]-'0';
@@ -234,7 +232,7 @@ namespace MeshLib{
                         mark=2;
                     }
                     if((line[i]==' '&&isdigit(line[i-1]))|| i == (int) line.length()-1){
-                        face.vert_handle_vec.push_back(v-1);
+                        face_vec[fn].vert_handle_vec.push_back(v-1);
                         if(t >=1){
                             // TODO: add texture index for this face
                         }
@@ -268,13 +266,13 @@ namespace MeshLib{
             const Vert& vert = vert_vec[i];
             file << "v ";
             for(size_t j=0; j<3; ++j)
-                file << v[j] << ((j<2) ? ' ' : '\n');
+                file << vert.coord[j] << ((j<2) ? ' ' : '\n');
         }
         // TODO: Store vertex texture
-
+    
         bool with_tex = false;
         // Store face information
-        for(size_t i = 0; i < nFace; ++ i){
+        for(size_t i = 0; i < face_vec.size(); ++ i){
             const Face& face = face_vec[i];
             const std::vector<VertHandle>& vert_handle_vec = face.vert_handle_vec;
             file << "f ";
@@ -283,6 +281,7 @@ namespace MeshLib{
                     file << vert_handle_vec[j] + 1 << ((j<vert_handle_vec.size()-1) ? ' ' : '\n');
                 }
             }else{}
+        }
 
         file.close();
 	

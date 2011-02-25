@@ -1,8 +1,10 @@
 #ifndef MESHLIB_MESHKERNEL_H_
 #define MESHLIB_MESHKERNEL_H_
 
-#include "MeshItem.h"
+#include "MeshElement.h"
 #include "MeshInfo.h"
+
+#include <vector>
 
 namespace MeshLib{
 
@@ -34,6 +36,6 @@ namespace MeshLib{
         Mesh& mesh;
 
         friend class MeshIO;
-    }
+    };
 }
 #endif

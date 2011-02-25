@@ -1,6 +1,9 @@
 #include "MeshKernel.h"
 #include <vector>
 #include <map>
+#include <set>
+#include <iostream>
+#include <cassert>
 using namespace std;
 
 namespace MeshLib{
@@ -12,10 +15,10 @@ namespace MeshLib{
         bool tri_mesh(true), quad_mesh(false), poly_mesh(false), manifold(true);
         typedef pair<VertHandle, VertHandle> Mesh_Edge;
         map< Mesh_Edge, vector<FaceHandle> > edge_map;
-        map< VertHandle, vector<VertHandle> > vert_adjacent;
+        map< VertHandle, set<VertHandle> > vert_adjacent;
         
-        for(size_t k=0; k<vec_face.size(); ++k){
-            const Face& face = vec_face[k];
+        for(size_t k=0; k<face_vec.size(); ++k){
+            const Face& face = face_vec[k];
             size_t vert_num = face.vert_handle_vec.size();
             if(vert_num < 3) {
                 //TODO: set MESHFLAG bad mesh
@@ -29,9 +32,9 @@ namespace MeshLib{
                 if(!poly_mesh) { quad_mesh = true; tri_mesh = false;}
             }
             for(size_t i=0; i<face.vert_handle_vec.size(); ++i){
-                const VertHandle& cur_handle = face.vert_handle_vec[i];
-                const VertHandle& nxt_handle = face.vert_handle_vec[(i+1)%n];
-                const VertHandle& pre_handle = face.vert_handle_vec[(i+n-1)%n];
+                VertHandle cur_handle = face.vert_handle_vec[i];
+                VertHandle nxt_handle = face.vert_handle_vec[(i+1)%vert_num];
+                VertHandle pre_handle = face.vert_handle_vec[(i+vert_num-1)%vert_num];
 
                 if(cur_handle == nxt_handle){
                     //TODO: set FACEFLAG non-manifold
@@ -43,9 +46,11 @@ namespace MeshLib{
 
                 edge_map[me].push_back(k);
 
-                vector<VertHandle>& adj_verts = vert_adjacent[cur_handle];
-                if(find(adj_verts.begin(), adj_verts.end(), nxt_handle) == adj_verts.end()) adj_verts.push_back(nxt_handle);
-                if(find(adj_verts.begin(), adj_verts.end(), pre_handle) == adj_verts.end()) adj_verts.push_back(pre_handle);
+                set<VertHandle>& adj_verts = vert_adjacent[cur_handle];
+                adj_verts.insert(nxt_handle);
+                adj_verts.insert(pre_handle);
+                //                if(find(adj_verts.begin(), adj_verts.end(), nxt_handle) == adj_verts.end()) adj_verts.push_back(nxt_handle);
+                //                if(find(adj_verts.begin(), adj_verts.end(), pre_handle) == adj_verts.end()) adj_verts.push_back(pre_handle);
                 
             }
         }
@@ -60,15 +65,14 @@ namespace MeshLib{
             }
         }
         
-        for(map<VertHandle, vector<VertHandle> >::const_iterator it = vert_adjacent.begin(); it!=vert_adjacent.end(); ++it){
-            const vector<VertHandle>& adj_verts = it->second;
+        for(map<VertHandle, set<VertHandle> >::const_iterator it = vert_adjacent.begin(); it!=vert_adjacent.end(); ++it){
+            const set<VertHandle>& adj_verts = it->second;
             if(adj_verts.size() == 0){
                 //TODO: set VERTFLAG isolated                
             }else{
                 int bdy_num = 0;
-                for(size_t i=0; i<adj_verts.size(); ++i){
-                    VertHandle vh1 = it->first;
-                    VertHandle vh2 = adj_verts[i];
+                for(set<VertHandle>::const_iterator is = adj_verts.begin(); is!= adj_verts.end(); ++is){
+                    VertHandle vh1 = it->first, vh2 = *is;
                     Mesh_Edge me = (vh1 < vh2) ? make_pair(vh1, vh2) : make_pair(vh2, vh1);
                     if(edge_map[me].size() ==1) bdy_num ++;
                 }
@@ -82,9 +86,9 @@ namespace MeshLib{
         mesh_info.poly_mesh = poly_mesh;
         mesh_info.manifold = manifold;
 
-        mesh.vert_num = vert_vec.size();
-        mesh.face_num = face_vec.size();
-        mesh.edge_num = edge_map.size();
+        mesh_info.vert_num = vert_vec.size();
+        mesh_info.face_num = face_vec.size();
+        mesh_info.edge_num = edge_map.size();
     }
 
     bool MeshKernel::CreateHalfEdgeDS()
@@ -148,11 +152,11 @@ namespace MeshLib{
             MeshEdge bdy_edge = make_pair(vh2, vh1);
             edge_map[bdy_edge] = he_vec.size()-1;            
         }
-        for(size_t k=0; k<bdy_edge.size(); ++k){
-            Halfedge& Inner_He = He_Vec[Bdy_He_Vec[K]];
-            HalfEdgeHandle curr_he_handle = bdy_edge[k];
-            HalfEdgeHandle prev_he_handle = he_vec[bdy_edge[k]].prev_he_handle;
-            HalfEdgeHandle next_he_handle = he_vec[bdy_edge[k]].next_he_handle;
+        for(size_t k=0; k<bdy_he_vec.size(); ++k){
+            HalfEdge& inner_he = he_vec[bdy_he_vec[k]];
+            HalfEdgeHandle curr_he_handle = bdy_he_vec[k];
+            HalfEdgeHandle prev_he_handle = he_vec[bdy_he_vec[k]].prev_he_handle;
+            HalfEdgeHandle next_he_handle = he_vec[bdy_he_vec[k]].next_he_handle;
 
             while(he_vec[prev_he_handle].oppo_he_handle != -1){
                 curr_he_handle = he_vec[prev_he_handle].oppo_he_handle;
@@ -172,7 +176,7 @@ namespace MeshLib{
             HalfEdgeHandle outer_he_handle = edge_map[outer_edge];
             HalfEdge& outer_he = he_vec[outer_he_handle];
             inner_he.oppo_he_handle = outer_he_handle;
-            outer_he.oppo_he_handle = bdy_edge[k];
+            outer_he.oppo_he_handle = bdy_he_vec[k];
             outer_he.prev_he_handle = prev_he_handle;
             outer_he.next_he_handle = next_he_handle;
             

@@ -1,5 +1,7 @@
-#include "MeshBasicOP.h"
-#include "Mesh"
+#include "MeshBasicOp.h"
+#include "Mesh.h"
+#include "MeshKernel.h"
+#include "MeshInfo.h"
 #include <queue>
 #include <algorithm>
 #include <cmath>
@@ -12,6 +14,19 @@ namespace MeshLib{
     MeshBasicOP::MeshBasicOP(Mesh& mesh) : m_mesh(mesh){}
     MeshBasicOP::~MeshBasicOP() {}
 
+    void MeshBasicOP::InitModel()
+    {
+        CalFaceNormal();
+        CalVertNormal();
+        
+        ModelInfo& m_info = *m_mesh.p_ModelInfo;
+        m_info.m_nComponents = CountComponentNum();
+        m_info.m_AvgEdgeLength = CalAvgEdgeLength();
+        CalBoundingBox(m_info.m_BoxMin, m_info.m_BoxMax, m_info.m_BoxDim);
+        CalBoundingSphere(m_info.m_SphereCenter, m_info.m_SphereRadius);
+        
+    }
+    
     vector<VertHandle> MeshBasicOP::GetAdjVertArray(const VertHandle& vh) const
     {
         const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
@@ -57,7 +72,7 @@ namespace MeshLib{
         box_min = box_max = vert_vec[0].coord; 
         for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
             const Coord3D& coord = vert_vec[vh].coord;
-            for(size_t k=0; k<coord.size(); ++k){
+            for(size_t k=0; k<3; ++k){
                 box_min[k] = min(box_min[k], coord[k]);
                 box_max[k] = max(box_max[k], coord[k]);
             }
@@ -69,12 +84,12 @@ namespace MeshLib{
     {
         const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
         if(vert_vec.size() == 0) return;
-        sphere_center.setCoord(0, 0, 0); 
+        sphere_center.setVec3Ds(0, 0, 0); 
         for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
             sphere_center += vert_vec[vh].coord;
         }
         sphere_center /= vert_vec.size();
-        radius = (vert_vec[vh].coord - sphere_center).abs();
+        radius = (vert_vec[0].coord - sphere_center).abs();
         for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
             radius = max(radius, (vert_vec[vh].coord - sphere_center).abs());
         }
@@ -84,14 +99,14 @@ namespace MeshLib{
     void MeshBasicOP::CalFaceNormal()
     {
         const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
-        const vector<Face>& face_vec = m_mesh.p_Kernel->GetFaceArray();
+        vector<Face>& face_vec = m_mesh.p_Kernel->GetFaceArray();
 
         for(FaceHandle fh = 0; fh < face_vec.size(); ++fh){
             Face& face = face_vec[fh];
             const vector<VertHandle>& vh_vec = face.vert_handle_vec;
-            const Vert& v0 = vh_vec[0];
-            const Vert& v1 = vh_vec[1];
-            const Vert& v2 = vh_vec[2];
+            const Vert& v0 = vert_vec[vh_vec[0]];
+            const Vert& v1 = vert_vec[vh_vec[1]];
+            const Vert& v2 = vert_vec[vh_vec[2]];
             face.normal = cross(v1.coord - v0.coord, v2.coord - v0.coord);
             if(!face.normal.normalize()) face.normal = COORD_AXIS_Z;
         }
@@ -99,15 +114,15 @@ namespace MeshLib{
 
     void MeshBasicOP::CalVertNormal()
     {
-        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
         const vector<Face>& face_vec = m_mesh.p_Kernel->GetFaceArray();
 
         for(VertHandle vh = 0; vh < vert_vec.size(); ++vh){
             Vert& vert = vert_vec[vh];
-            vert.normal.setCoords(0, 0, 0);
-            const vector<FaceHandle>& adj_faces = GetAdjFaceArray();
+            vert.normal.setVec3Ds(0, 0, 0);
+            const vector<FaceHandle>& adj_faces = GetAdjFaceArray(vh);
             for(size_t k=0; k<adj_faces.size(); ++k){
-                const Face& face = adj_faces[k];
+                const Face& face = face_vec[adj_faces[k]];
                 vert.normal += face.normal;
             }
             if(!vert.normal.normalize()) vert.normal = COORD_AXIS_Z;
@@ -116,8 +131,9 @@ namespace MeshLib{
 
     size_t MeshBasicOP::CountComponentNum() const
     {
-        size_t vert_num = mesh.p_MeshInfo->GetVertNum();
-        
+        size_t vert_num = m_mesh.p_ModelInfo->GetVertNum();
+
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
         size_t component_num = 0;
         std::vector<bool> visited_flag(vert_num, false);
 
@@ -131,7 +147,7 @@ namespace MeshLib{
                     const vector<VertHandle>& adj_vert = GetAdjVertArray(_vh);
                     for(size_t k=0; k<adj_vert.size(); ++k){
                         if(!visited_flag[adj_vert[k]] ){
-                            q.push(adj_vert[k]]; visited_flag[adj_vert[k]] = true;
+                            q.push(adj_vert[k]); visited_flag[adj_vert[k]] = true;
                         }
                     }
                 }
@@ -140,19 +156,12 @@ namespace MeshLib{
         return component_num;
     }
 
-    
-    void MeshBasicOP::InitModel()
-    {   
-        
-        
-    }
 
-
-    double MeshBasicOP::CalAvgEdgeLength()
+    double MeshBasicOP::CalAvgEdgeLength() const
     {
-        const vector<Edge>& edge_vec = mesh.p_Kernel->GetEdgeArray();
-        const vector<Vert>& vert_vec = mesh.p_Kernel->GetVertArray();
-        const vector<HalfEdge>& he_vec = mesh.p_Kernel->GetHalfEdgeArray();
+        const vector<Edge>& edge_vec = m_mesh.p_Kernel->GetEdgeArray();
+        const vector<Vert>& vert_vec = m_mesh.p_Kernel->GetVertArray();
+        const vector<HalfEdge>& he_vec = m_mesh.p_Kernel->GetHEArray();
 
         double sum_len = 0;
         size_t edge_num = edge_vec.size();

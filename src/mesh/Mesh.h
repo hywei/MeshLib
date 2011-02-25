@@ -9,6 +9,7 @@ namespace MeshLib{
     class MeshKernel;
     class MeshIO;
     class MeshBasicOP;
+    class ModelInfo;
     
     class Mesh
     {

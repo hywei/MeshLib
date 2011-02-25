@@ -25,6 +25,7 @@ namespace MeshLib{
     
     /* ================== Properties ================== */
     typedef Vec3D<double> Coord;
+    typedef Vec3D<double> Coord3D;
     typedef Vec2D<double> Coord2D;
     
     typedef Coord   Normal;

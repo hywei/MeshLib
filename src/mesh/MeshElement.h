@@ -14,17 +14,17 @@ namespace MeshLib{
     typedef Handle HalfEdgeHandle;
 
     enum VERTFLAG{
-        ISOLATED = 0x00000100, // isolated vertex flag
-        MANIFOLD = 0x00000200, // manifold vertex flag
-        BOUNDARY = 0x00000400  // boundary vertex flag
+        ISOLATED_VERT = 0x00000100, // isolated vertex flag
+        NONMANIFOLD_VERT = 0x00000200, // manifold vertex flag
+        BOUNDARY_VERT = 0x00000400  // boundary vertex flag
     };
     enum FACEFLAG{
-        BOUNDARY = 0x00000100,
-        MANIFOLD = 0x00000200
+        BOUNDARY_FACE = 0x00000100,
+        NONMANIFOLD_FACE = 0x00000200
     };
     enum EDGEFLAG{
-        BOUNDARY = 0x00000100,
-        MANIFOLD = 0x00000200
+        BOUNDARY_EDGE = 0x00000100,
+        NONMANIFOLD_EDGE = 0x00000200
     };
     enum MESHFLAG{
         TRIMESH = 0x00000100,
@@ -38,8 +38,7 @@ namespace MeshLib{
     {        
     public:
         Coord3D coord;
-        Normal normal;
-        Color  color;
+        Normal normal;        
         VERTFLAG flag; // flag bits
         HalfEdgeHandle he_handle; 
     };
@@ -75,10 +74,10 @@ namespace MeshLib{
         VertHandle vert_handle; /// vertex of halfedge
         FaceHandle face_handle; /// face of halfedge, -1 if boundary halfedge
         EdgeHandle edge_handle; /// edge of halfedge
-    }
+    };
     
 
-    class ModelInfo
+    class MeshInfo
     {
     public:
         MESHFLAG flag;
@@ -105,7 +104,16 @@ namespace MeshLib{
         size_t edge_num;
 
         friend class MeshKernel;
+        friend class MeshIO;
+    };
+
+    HalfEdge::HalfEdge():
+    prev_he_handle(-1), next_he_handle(-1), oppo_he_handle(-1),
+        vert_handle(-1), face_handle(-1), edge_handle(-1)
+    {
     }
+
+    HalfEdge::~HalfEdge(){}
 }
 
 #endif

@@ -1,0 +1,38 @@
+cmake_minimum_required(VERSION 2.8)
+
+if(WIN32)
+        set(CMAKE_FIND_LIBRARY_PREFIXES "")
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
+else()
+        set(CMAKE_FIND_LIBRARY_PREFIXES "lib")
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+endif()
+
+if(find_package(Boost REQUIRED))
+else()
+  set(BOOST_INCLUEDDIR "/usr/lib/")
+  message("${BOOST_INCLUDE_DIR}")
+endif()
+  
+project(MeshLib)
+
+
+message("${CMAKE_BUILD_TYPE}")
+message("${CMAKE_CXX_COMPILER}")
+
+if(WIN32)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/win32)
+else()
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/linux)
+endif()
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+
+#add_subdirectory(src/common)
+add_subdirectory(src/util)
+add_subdirectory(src/mesh)
+add_subdirectory(src/main)
+
+     
+        
+       

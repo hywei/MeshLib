@@ -1,8 +1,8 @@
 #ifndef MESHLIB_MESHBASICOP_H_
-#defein MESHLIB_MESHBASICOP_H_
+#define MESHLIB_MESHBASICOP_H_
 
-#include <string>
-#include "../common/types"
+#include <vector>
+#include "../common/types.h"
 #include "MeshElement.h"
 
 namespace MeshLib{
@@ -17,8 +17,8 @@ namespace MeshLib{
 
         void InitModel();
 
-        std::vector<VertHanlde> GetAdjVertArray(const VertHanlde&) const;
-        std::vector<FaceHanlde> GetAdjFaceArray(const VertHanlde&) const;
+        std::vector<VertHandle> GetAdjVertArray(const VertHandle&) const;
+        std::vector<FaceHandle> GetAdjFaceArray(const VertHandle&) const;
         
     private:
         
@@ -31,6 +31,7 @@ namespace MeshLib{
 
         size_t CountComponentNum() const; 
         double CalAvgEdgeLength() const;
+        double CalAvgFaceArea() const;
         
     private:
         Mesh& m_mesh;

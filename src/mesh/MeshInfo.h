@@ -5,17 +5,18 @@
 #include "../common/types.h"
 
 namespace MeshLib{
+    class Mesh;
     
     class ModelInfo
     {
     public:
         // Constructor / Destructor
-        ModelInfo(){}
+        ModelInfo(Mesh& _mesh){}
         ~ModelInfo(){}
         
         std::string GetFileName() const { return m_FileName; }
     
-        size_t GetVertexNum() const { return m_nVertices; }
+        size_t GetVertNum() const { return m_nVertices; }
         size_t GetFaceNum() const { return m_nFaces; }
         size_t GetHalfEdgeNum() const { return m_nHalfEdges; }    
         size_t GetBoundaryNum() const { return m_nBoundaries; }
@@ -53,7 +54,8 @@ namespace MeshLib{
         PolyIndexArray  m_Boundaries;   // Boundary vertex loop
         
         friend class MeshKernel;
-        friend class MeshIO;        
+        friend class MeshIO;
+        friend class MeshBasicOP;
     };
 }
 #endif
