@@ -23,8 +23,7 @@ namespace MeshLib{
         m_info.m_nComponents = CountComponentNum();
         m_info.m_AvgEdgeLength = CalAvgEdgeLength();
         CalBoundingBox(m_info.m_BoxMin, m_info.m_BoxMax, m_info.m_BoxDim);
-        CalBoundingSphere(m_info.m_SphereCenter, m_info.m_SphereRadius);
-        
+        CalBoundingSphere(m_info.m_SphereCenter, m_info.m_SphereRadius);        
     }
     
     vector<VertHandle> MeshBasicOP::GetAdjVertArray(const VertHandle& vh) const

@@ -38,6 +38,7 @@ namespace MeshLib{
     /* ================== Property Arrays ================== */
     typedef std::vector<Coord2D> Coord2DArray;
     typedef std::vector<Coord>   CoordArray;
+    typedef std::vector<Coord3D> Coord3DArray;
     typedef std::vector< Color<double> >   ColorArray;
 
     typedef std::vector<bool>    BoolArray;
@@ -51,7 +52,7 @@ namespace MeshLib{
     typedef std::vector<Flag>     FlagArray;
 
     typedef std::vector<IndexArray >     PolyIndexArray;
-    typedef std::vector<CoordArray >     PolyCoordArray;
+    typedef std::vector<Coord3DArray >     PolyCoordArray;
     typedef std::vector<TexCoordArray >  PolyTexCoordArray;
     typedef std::vector<DoubleArray >    PolyDataArray;
     

@@ -1,7 +1,7 @@
 #include "MeshIO.h"
 #include "Mesh.h"
 #include "MeshKernel.h"
-#include "../util/Utility.h"
+#include "../util/utility.h"
 
 #include <iostream>
 #include <fstream>

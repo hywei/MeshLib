@@ -5,14 +5,13 @@
 #include <string>
 
 namespace MeshLib{
-
-    typedef ptrdiff_t Handle;
+    typedef size_t Handle;
     
     typedef Handle VertHandle;
     typedef Handle FaceHandle;
     typedef Handle EdgeHandle;
     typedef Handle HalfEdgeHandle;
-
+    
     enum VERTFLAG{
         ISOLATED_VERT = 0x00000100, // isolated vertex flag
         NONMANIFOLD_VERT = 0x00000200, // manifold vertex flag

@@ -32,4 +32,38 @@ namespace MeshLib{
         return p_IO->StoreModel(filename);
     }
 
+    size_t Mesh::GetVertexNumber() const {  return p_ModelInfo->GetVertNum() ;}
+    
+    size_t Mesh::GetFaceNumber() const{ return p_ModelInfo->GetFaceNum(); }
+    
+    const Coord3D& Mesh::GetVertexCoord(VertHandle vh) const
+    {
+        return p_Kernel->GetVertArray()[vh].coord;
+    }
+    
+    const Coord3D& Mesh::GetVertexNorm(VertHandle vh) const
+    {
+        return p_Kernel->GetVertArray()[vh].normal;
+    }
+    
+    const Coord3D& Mesh::GetFaceNorm(FaceHandle fh) const
+    {
+        return p_Kernel->GetFaceArray()[fh].normal;
+    }
+    
+    std::vector<VertHandle> Mesh::GetAdjVertics(VertHandle vh) const
+    {
+        return p_BasicOP->GetAdjVertArray(vh);
+    }
+    
+    std::vector<FaceHandle> Mesh::GetAdjFaces(VertHandle vh) const
+    {
+        return p_BasicOP->GetAdjFaceArray(vh);
+    }
+
+    std::vector<VertHandle> Mesh::GetFaceVertics(FaceHandle fh) const
+    {
+        return p_Kernel->GetFaceArray()[fh].vert_handle_vec;
+    }
+
 }

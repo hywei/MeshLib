@@ -32,7 +32,4 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 add_subdirectory(src/util)
 add_subdirectory(src/mesh)
 add_subdirectory(src/main)
-
-     
-        
-       
+                    
