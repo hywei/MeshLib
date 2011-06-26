@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace MeshLib{
+namespace meshlib{
     /* ================== Various Indices ================== */
     typedef int VertexID;    // Vertex index
     typedef int	EdgeID;      // HalfEdge index
@@ -56,6 +56,6 @@ namespace MeshLib{
     typedef std::vector<TexCoordArray >  PolyTexCoordArray;
     typedef std::vector<DoubleArray >    PolyDataArray;
     
-} // namespace MeshLib
+} // namespace meshlib
 
 #endif

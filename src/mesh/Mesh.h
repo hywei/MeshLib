@@ -6,48 +6,52 @@
 #include "../common/types.h"
 #include "MeshElement.h"
 
-namespace MeshLib{
+namespace meshlib{
 
-    class MeshKernel;
-    class MeshIO;
-    class MeshBasicOP;
-    class ModelInfo;
+  class MeshKernel;
+  class MeshIO;
+  class MeshBasicOP;
+  class MeshInfo;
     
-    class Mesh
-    {
-    public:
-        // Constructor/Destructor
-        Mesh();
-        ~Mesh();
+  class Mesh
+  {
+ public:
+    // Constructor/Destructor
+    Mesh();
+    ~Mesh();
         
-        // Input/Output functions
-        bool AttachModel(const std::string& filename);
-        bool StoreModel(const std::string& filename) const;
+    // Input/Output functions
+    bool attachModel(const std::string& filename);
+    bool storeModel(const std::string& filename) const;
 
-        size_t GetVertexNumber() const;
-        size_t GetFaceNumber() const;
-        const Coord3D& GetVertexCoord(VertHandle vh) const;
-        const Coord3D& GetVertexNorm(VertHandle vh) const;
-        const Coord3D& GetFaceNorm(FaceHandle fh) const;
-        std::vector<VertHandle> GetAdjVertics(VertHandle vh) const;
-        std::vector<FaceHandle> GetAdjFaces(VertHandle vh) const;
-        std::vector<VertHandle> GetFaceVertics(FaceHandle fh) const;
-
-        bool IsBoundaryVertex(VertHandle vh);
-        bool IsBoundaryFace(FaceHandle fh);
-        bool IsBoundaryEdge(EdgeHandle eh);        
+    size_t getVertexNumber() const;
+    size_t getFaceNumber() const;
+    size_t getEdgeNumber() const;
         
-    private:            
-        boost::shared_ptr<MeshKernel> p_Kernel;
-        boost::shared_ptr<MeshIO> p_IO;
-        boost::shared_ptr<MeshBasicOP> p_BasicOP;
-        boost::shared_ptr<ModelInfo> p_ModelInfo;
+    const Coord3D& getVertexCoord(VertHandle vh) const;
+    const Coord3D& getVertexNorm(VertHandle vh) const;
+    const Coord3D& getFaceNorm(FaceHandle fh) const;
 
-        friend class MeshKernel;
-        friend class MeshIO;
-        friend class MeshBasicOP;
-        friend class ModelInfo;
-    };
+    const VertHandleArray& getAdjVertics(VertHandle vh) const;
+    const FaceHandleArray& getAdjFaces(VertHandle vh) const;
+    const VertHandleArray& getFaceVertics(FaceHandle fh) const;
+
+    bool isBoundaryVertex(VertHandle vh) const;
+    bool isBoundaryFace(FaceHandle fh) const;
+    bool isBoundaryEdge(EdgeHandle eh) const;        
+
+    bool isManifold() const;
+ private:            
+    boost::shared_ptr<MeshKernel> p_Kernel;
+    boost::shared_ptr<MeshIO> p_IO;
+    boost::shared_ptr<MeshBasicOP> p_BasicOP;
+    boost::shared_ptr<MeshInfo> p_Info;
+
+    friend class MeshKernel;
+    friend class MeshIO;
+    friend class MeshBasicOP;
+    friend class MeshInfo;
+  };
 
 
 } // 
